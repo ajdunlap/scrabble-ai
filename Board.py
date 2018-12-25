@@ -30,6 +30,10 @@ class BoardState:
         self.played_letters = []
         for r in range(self.board.height):
             self.played_letters.append([' ']*self.board.width)
+    def doPlay(self,squares,letters):
+        # TODO: include validation logic
+        for (r,c),letter in zip(squares,letters):
+            self.played_letters[r][c] = letter
     def show(self):
         for r,row in enumerate(self.played_letters):
             for c,letter in enumerate(row):
