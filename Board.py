@@ -1,4 +1,5 @@
 from ansi.colour import fg,bg
+import itertools
 
 class Board:
     def __init__(self,height,width,double_letter_scores,
@@ -30,14 +31,16 @@ class BoardState:
         self.played_letters = []
         for r in range(self.board.height):
             self.played_letters.append([' ']*self.board.width)
-    def doPlay(self,squares,letters):
+    def do_play(self,squares,letters):
         # TODO: include validation logic
         for (r,c),letter in zip(squares,letters):
             self.played_letters[r][c] = letter
-    def show(self):
+    def show(self,highlight = []):
         for r,row in enumerate(self.played_letters):
             for c,letter in enumerate(row):
-                if (r,c) in self.board.triple_word_scores:
+                if (r,c) in highlight:
+                    f = bg.yellow
+                elif (r,c) in self.board.triple_word_scores:
                     f = bg.red
                 elif (r,c) in self.board.double_word_scores:
                     f = bg.magenta
@@ -53,3 +56,85 @@ class BoardState:
                     print_letter = chr(0xff00 + ord(letter)-ord('A')+ord("!"))
                 print(f(print_letter),end="")
             print()
+    def next(self,f,g,r,c):
+        while True:
+            r = f(r)
+            c = g(c)
+            if r < 0 or c < 0 or r >= self.board.width or c >= self.board.height:
+                return False
+            elif self.played_letters[r][c] == ' ':
+                return (r,c)
+    def next_up(self,r,c):
+        return self.next(lambda r: r-1, lambda c: c,r,c)
+    def next_down(self,r,c):
+        return self.next(lambda r: r+1, lambda c: c,r,c)
+    def next_left(self,r,c):
+        return self.next(lambda r: r, lambda c: c-1,r,c)
+    def next_right(self,r,c):
+        return self.next(lambda r: r, lambda c: c+1,r,c)
+    def adjacent_squares(self,r,c):
+        rv = []
+        if r > 0:
+            rv.append((r-1,c))
+        if r < self.board.height-1:
+            rv.append((r+1,c))
+        if c > 0:
+            rv.append((r,c-1))
+        if c < self.board.width-1:
+            rv.append((r,c+1))
+        return rv
+
+    def get_places_to_play_from_start(self,rack_size,r0,c0,squaress):
+        for dirs in [(self.next_up,self.next_down),(self.next_left,self.next_right)]:
+            for back in range(0,rack_size):
+                r = r0
+                c = c0
+                back_failed = False
+                back_squares = [(r,c)]
+                for b in range(back):
+                    v = dirs[0](r,c)
+                    if v:
+                        (r,c) = v
+                        back_squares.append(v)
+                    else:
+                        back_failed = True
+                        break
+                if back_failed:
+                    break
+                for forward in range(0,rack_size-back):
+                    squares = back_squares.copy()
+                    r = r0
+                    c = c0
+                    forward_failed = False
+                    for f in range(forward):
+                        v = dirs[1](r,c)
+                        if v:
+                            (r,c) = v
+                            squares.append(v)
+                        else:
+                            forward_failed = True
+                            break
+                    if forward_failed:
+                        break
+                    else:
+                        squares.sort()
+                        if squares not in squaress:
+                            squaress.append(squares)
+
+    def get_places_to_play_not_first_turn(self,rack_size):
+        squaress = []
+        for r0,c0 in itertools.product(range(self.board.height),range(self.board.width)):
+            if self.played_letters[r0][c0] == ' ' and any(self.played_letters[r][c] == ' ' for r,c in self.adjacent_squares(r0,c0)):
+                self.get_places_to_play_from_start(rack_size,r0,c0,squaress)
+        return squaress
+
+    def get_places_to_play_first_turn(self,rack_size):
+        squaress = []
+        self.get_places_to_play_from_start(rack_size,self.board.starting_square[0],self.board.starting_square[1],squaress)
+        return squaress
+
+    def get_places_to_play(self,rack_size):
+        if self.played_letters[self.starting_square[0]][self.starting_square[1]] == ' ':
+            return self.get_places_to_play_first_turn(rack_size)
+        else:
+            return self.get_places_to_play_not_first_turn(rack_size)
