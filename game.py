@@ -1,8 +1,8 @@
 import random
 import Board
 
-letters_per_hand = 7
-starting_tiles = ""
+rack_size = 7
+official_starting_tiles = "..EEEEEEEEEEEEAAAAAAAAAIIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ"
 
 class Game:
   def __init__(self, *, players, board=None):
@@ -13,16 +13,16 @@ class Game:
       self.board = Board.make_official_scrabble_board()
     self.remaining_tiles = random.shuffle(starting_tiles)
     for p in self.players:
-      fill_hand(p)
+      fill_rack(p)
     # Determine turn order by sorting by the first letter they got
-    self.players.sort(key=lambda p: p.hand[0])
+    self.players.sort(key=lambda p: p.rack[0])
 
-  def fill_hand(self, player):
-    num_needed = letters_per_hand - len(player.hand)
+  def fill_rack(self, player):
+    num_needed = rack_size - len(player.rack)
     assert num_needed >= 0
     if num_needed > len(self.remaining_tiles):
       num_needed = len(self.remaining_tiles)
-    player.hand += self.remaining_tiles[:num_needed]
+    player.rack += self.remaining_tiles[:num_needed]
     del self.remaining_tiles[:num_needed]
     
   def  run(show_boards=False):
@@ -42,6 +42,6 @@ class Game:
         # TODO: Allow exchange
         p.score += self.board.score(move)
         self.board.apply(move)
-        fill_hand(p)
+        fill_rack(p)
         if show_boards:
           self.board.show()
