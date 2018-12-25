@@ -25,7 +25,7 @@ class Game:
     player.rack += self.remaining_tiles[:num_needed]
     del self.remaining_tiles[:num_needed]
     
-  def  run(show_boards=False):
+  def run(show_boards=False):
     run_turns(show_boards)
     return max(self.players, key=lambda p: p.score)
     
