@@ -45,7 +45,7 @@ class PlayerState:
                             lcs = [l for l in effective_rack if l.islower()]
                             lc_options = []
                             for l in lcs:
-                                lc_options.append(j for j,x in enumerate(proposal) if x == l.upper())
+                                lc_options.append([j for j,x in enumerate(proposal) if x == l.upper()])
                             for opts in itertools.product(*lc_options):
                                 if len(set(opts)) < len(opts):
                                     continue
