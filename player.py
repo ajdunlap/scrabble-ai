@@ -1,11 +1,12 @@
 import itertools
 
 class PlayerState:
-    def __init__(self,wl,strategy,rack = [],score = 0):
+    def __init__(self,name,wl,strategy,rack = [],score = 0):
         self.strategy = strategy
         self.rack = sorted(rack) # should always be sorted
         self.score = score
         self.wordlist = wl
+        self.name = name
 
     def get_move(self,bs):
         return self.strategy(self,bs)

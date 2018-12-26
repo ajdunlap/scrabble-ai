@@ -79,16 +79,16 @@ class Game:
   def show_board_and_scores(self):
         self.bs.show()
         for j,p in enumerate(self.players):
-            print("Player ",j," score: ",p.score)
+            print("Player ",p.name," score: ",p.score)
             print("       rack: ",''.join(p.rack))
 
 
 #import pdb
 #pdb.set_trace()
-wl = wordlist.Wordlist("words")
-p1 = player.PlayerState(wl,greedy.greedy_strategy)
-p2 = player.PlayerState(wl,greedy.greedy_strategy)
-p3 = player.PlayerState(wl,greedy.greedy_strategy)
-p4 = player.PlayerState(wl,greedy.greedy_strategy)
-g = Game(players=[p1,p2,p3,p4])
-g.run(True)
+hard_wl = wordlist.Wordlist("MOBYDICK")
+simple_wl = wordlist.Wordlist("SHAKESPEARE")
+p1 = player.PlayerState("Melville",hard_wl,greedy.greedy_strategy)
+p2 = player.PlayerState("Shakespeare",simple_wl,greedy.greedy_strategy)
+g = Game(players=[p1,p2])
+import cProfile
+cProfile.run("g.run(True)")

@@ -1,8 +1,10 @@
 from ansi.colour import fg,bg
 import itertools
-import copy
 import player
 import wordlist
+
+def copy2levellist(l):
+    return [ll[:] for ll in l]
 
 class InvalidMoveException(ValueError):
     pass
@@ -242,14 +244,8 @@ class BoardState:
                 break
         return ''.join(word),word_squares
 
-    #def make_proposal(self,squares):
-        #new_board = copy.deepcopy(self.played_letters)
-        #for j,(r,c) in enumerate(squares):
-            #new_board[r][c] = str(j)
-        #return new_board
-
     def make_play(self,squares,letters):
-        new_board = BoardState(self.board,copy.deepcopy(self.played_letters))
+        new_board = BoardState(self.board,copy2levellist(self.played_letters))
         for j,(r,c) in enumerate(squares):
             new_board.played_letters[r][c] = letters[j]
         return new_board
@@ -356,16 +352,3 @@ class BoardState:
             score = 0
 
         return score
-
-
-#bs = BoardState(make_official_scrabble_board())
-#bs.do_play([(7,7),(7,8),(7,9),(7,10)],"ECHO")
-#l = bs.get_places_to_play(7)
-#x = l[100]
-#main_word,cross_words = bs.get_words_produced(*x)
-#main_word = main_word[0]
-#cross_words = [''.join(cw[0]) for cw in cross_words]
-#p = player.PlayerState("ASENGER")
-#wl = wordlist.Wordlist('wordlist')
-#word = next(p.generate_possibilities(wl, main_word,cross_words))
-#best = max(p.generate_possibilities(wl, main_word,cross_words), key=lambda m: bs.score(x[1], m))
