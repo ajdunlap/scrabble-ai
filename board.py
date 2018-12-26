@@ -113,8 +113,9 @@ class BoardState:
                 if letter == ' ':
                     print_letter = '\u3000'
                 else:
-                    print_letter = fg.bold(chr(0xff00 + ord(letter)-ord('A')+ord("!")))
-                print(f(print_letter + "\u20DE"),end="")
+                    print_letter = chr(0xff00 + ord(letter)-ord('A')+ord("!"))
+                #print(f(print_letter + "\u20DE"),end="")
+                print(f(print_letter),end="")
             print()
         print()
 
@@ -310,6 +311,8 @@ class BoardState:
         score = 0
         for ws in word_squaress:
             score += self.score_word(squares,letters,ws)
+        if len(letters) == 7:
+            score += 50
         return score
 
     # this is broken for now
@@ -355,14 +358,14 @@ class BoardState:
         return score
 
 
-bs = BoardState(make_official_scrabble_board())
-bs.do_play([(7,7),(7,8),(7,9),(7,10)],"ECHO")
-l = bs.get_places_to_play(7)
-x = l[100]
-main_word,cross_words = bs.get_words_produced(*x)
-main_word = main_word[0]
-cross_words = [''.join(cw[0]) for cw in cross_words]
-p = player.PlayerState("ASENGER")
-wl = wordlist.Wordlist('wordlist')
-word = next(p.generate_possibilities(wl, main_word,cross_words))
-best = max(p.generate_possibilities(wl, main_word,cross_words), key=lambda m: bs.score(x[1], m))
+#bs = BoardState(make_official_scrabble_board())
+#bs.do_play([(7,7),(7,8),(7,9),(7,10)],"ECHO")
+#l = bs.get_places_to_play(7)
+#x = l[100]
+#main_word,cross_words = bs.get_words_produced(*x)
+#main_word = main_word[0]
+#cross_words = [''.join(cw[0]) for cw in cross_words]
+#p = player.PlayerState("ASENGER")
+#wl = wordlist.Wordlist('wordlist')
+#word = next(p.generate_possibilities(wl, main_word,cross_words))
+#best = max(p.generate_possibilities(wl, main_word,cross_words), key=lambda m: bs.score(x[1], m))
