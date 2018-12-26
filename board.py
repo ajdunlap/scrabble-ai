@@ -1,6 +1,11 @@
-from ansi.colour import fg,bg
+#from ansi.colour import fg,bg
 import itertools
 import copy
+import player
+import wordlist
+
+class InvalidMoveException(ValueError):
+    pass
 
 class Board:
     def __init__(self,height,width,double_letter_scores,
@@ -26,6 +31,52 @@ def make_official_scrabble_board():
         l.extend(tmp_l)
     return Board(15,15,set(double_letter_scores),set(double_word_scores),set(triple_letter_scores),set(triple_word_scores),(7,7))
 
+letter_scores = {
+    '.': 0,
+    'A': 1,
+    'B': 3,
+    'C': 3,
+    'D': 2,
+    'E': 1,
+    'F': 4,
+    'G': 2,
+    'H': 4,
+    'I': 1,
+    'J': 8,
+    'K': 5,
+    'L': 1,
+    'M': 3,
+    'N': 1,
+    'O': 1,
+    'P': 3,
+    'Q': 10,
+    'R': 1,
+    'S': 1,
+    'T': 1,
+    'U': 1,
+    'V': 4,
+    'W': 4,
+    'X': 8,
+    'Y': 4,
+    'Z': 10,
+}
+
+def get_oriented(is_vertical, arr, a, b):
+    if is_vertical:
+        return arr[a][b]
+    else:
+        return arr[b][a]
+def incr_oriented(is_vertical, a, b):
+    if is_vertical:
+        return (a+1, b)
+    else:
+        return (a, b+1)
+def oriented_tuple(is_vertical, a, b):
+    if is_vertical:
+        return (a,b)
+    else:
+        return (b,a)
+
 class BoardState:
     def __init__(self,board,played_letters = None):
         self.board = board
@@ -45,23 +96,24 @@ class BoardState:
     def show(self,highlight = []):
         for r,row in enumerate(self.played_letters):
             for c,letter in enumerate(row):
-                if (r,c) in highlight:
-                    f = bg.yellow
-                elif (r,c) in self.board.triple_word_scores:
-                    f = bg.red
-                elif (r,c) in self.board.double_word_scores:
-                    f = bg.magenta
-                elif (r,c) in self.board.triple_letter_scores:
-                    f = bg.blue
-                elif (r,c) in self.board.double_letter_scores:
-                    f = bg.cyan
-                else:
-                    f = lambda x: x
-                if letter == ' ':
-                    print_letter = '\u3000'
-                else:
-                    print_letter = chr(0xff00 + ord(letter)-ord('A')+ord("!"))
-                print(f(print_letter),end="")
+                print(letter,end='')
+                #if (r,c) in highlight:
+                #    f = bg.yellow
+                #elif (r,c) in self.board.triple_word_scores:
+                #    f = bg.red
+                #elif (r,c) in self.board.double_word_scores:
+                #    f = bg.magenta
+                #elif (r,c) in self.board.triple_letter_scores:
+                #    f = bg.blue
+                #elif (r,c) in self.board.double_letter_scores:
+                #    f = bg.cyan
+                #else:
+                #    f = lambda x: x
+                #if letter == ' ':
+                #    print_letter = '\u3000'
+                #else:
+                #    print_letter = chr(0xff00 + ord(letter)-ord('A')+ord("!"))
+                #print(f(print_letter),end="")
             print()
 
     def next_open(self,f,r,c):
@@ -216,7 +268,83 @@ class BoardState:
         else:
             return self.get_places_to_play_not_first_turn(rack_size)
 
+
+
+
+    def score_word(self, squares, letters, is_vertical, const, first, last):
+        word_multiplier = 1
+        letters_score = 0
+        for i in range(first, last+1):
+            letter_multiplier = 1
+            if oriented_tuple(is_vertical, i, const) in squares:
+                if oriented_tuple(is_vertical, i, const) \
+                        in self.board.double_letter_scores:
+                    letter_multiplier *= 2
+                if oriented_tuple(is_vertical, i, const) \
+                        in self.board.triple_letter_scores:
+                    letter_multiplier *= 3
+                if oriented_tuple(is_vertical, i, const) \
+                        in self.board.double_word_scores:
+                    word_multiplier *= 2
+                if oriented_tuple(is_vertical, i, const) \
+                        in self.board.triple_word_scores:
+                    word_multiplier *= 3
+                sq_idx = squares.index(oriented_tuple(is_vertical, i, const))
+                letter = letters[sq_idx]
+            else:
+                letter = get_oriented(is_vertical, self.played_letters, i, const)
+            letters_score += letter_multiplier * letter_scores[letter]
+        return letters_score * word_multiplier
+
+    def score(self, squares, letters):
+        if len(squares) == 0 or len(letters) != len(squares):
+            raise InvalidMoveException()
+        for pos in squares:
+            # Check that all the squares are empty
+            if self.played_letters[pos[0]][pos[1]] != ' ':
+                raise InvalidMoveException()
+        if len(squares) > 1:
+            is_vertical = squares[0][1] == squares[1][1]
+        else:
+            is_vertical = True
+
+        if is_vertical:
+            col = squares[0][1]
+            for s in squares:
+                if s[1] != col:
+                    # Not perfectly vertical
+                    raise InvalidMoveException()
+            top_played_square = min(squares, key=lambda s: s[0])[0]
+            bottom_played_square = max(squares, key=lambda s: s[0])[0]
+            top_square = top_played_square
+            bottom_square = bottom_played_square
+            while top_square > 0 and self.played_letters[top_square - 1][col] != ' ':
+                top_square -= 1
+            while bottom_square < self.board.height - 1 \
+                    and self.played_letters[bottom_square + 1][col] != ' ':
+                bottom_square += 1
+
+            for r in range(top_square, bottom_square + 1):
+                if (r,col) not in squares and self.played_letters[r][col] == ' ':
+                    # There's a gap in the middle of the played letters
+                    raise InvalidMoveException()
+
+            score = self.score_word(squares, letters, is_vertical, col, top_square, bottom_square)
+            # TODO: Score cross-words
+        else:
+            # TODO: Horizontal
+            score = 0
+
+        return score
+
+
 bs = BoardState(make_official_scrabble_board())
 bs.do_play([(7,7),(7,8),(7,9),(7,10)],"ECHO")
 l = bs.get_places_to_play(7)
 x = l[100]
+y = bs.get_words_produced(*x)
+p = player.PlayerState("ASENGER")
+wl = wordlist.Wordlist('wordlist')
+word = next(p.generate_possibilities(wl, *y))
+best = max(p.generate_possibilities(wl, *y), key=lambda m: bs.score(x[1], m))
+
