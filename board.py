@@ -65,22 +65,6 @@ letter_scores = {
 for l in 'abcdefghjikjlmnopqrstuvwxyz':
     letter_scores[l] = 0
 
-def get_oriented(is_vertical, arr, a, b):
-    if is_vertical:
-        return arr[a][b]
-    else:
-        return arr[b][a]
-def incr_oriented(is_vertical, a, b):
-    if is_vertical:
-        return (a+1, b)
-    else:
-        return (a, b+1)
-def oriented_tuple(is_vertical, a, b):
-    if is_vertical:
-        return (a,b)
-    else:
-        return (b,a)
-
 class BoardState:
     def __init__(self,board,played_letters = None):
         self.board = board
@@ -311,44 +295,6 @@ class BoardState:
             score += 50
         return score
 
-    # this is broken for now
-    def is_play_valid(self, squares, letters):
-        if len(squares) == 0 or len(letters) != len(squares):
-            return False
-        for pos in squares:
-            # Check that all the squares are empty
-            if self.played_letters[pos[0]][pos[1]] != ' ':
-                return False
-        if len(squares) > 1:
-            is_vertical = squares[0][1] == squares[1][1]
-        else:
-            is_vertical = True
-
-        if is_vertical:
-            col = squares[0][1]
-            for s in squares:
-                if s[1] != col:
-                    # Not perfectly vertical
-                    raise InvalidMoveException()
-            top_played_square = min(squares, key=lambda s: s[0])[0]
-            bottom_played_square = max(squares, key=lambda s: s[0])[0]
-            top_square = top_played_square
-            bottom_square = bottom_played_square
-            while top_square > 0 and self.played_letters[top_square - 1][col] != ' ':
-                top_square -= 1
-            while bottom_square < self.board.height - 1 \
-                    and self.played_letters[bottom_square + 1][col] != ' ':
-                bottom_square += 1
-
-            for r in range(top_square, bottom_square + 1):
-                if (r,col) not in squares and self.played_letters[r][col] == ' ':
-                    # There's a gap in the middle of the played letters
-                    raise InvalidMoveException()
-
-            score = self.score_word(squares, letters, is_vertical, col, top_square, bottom_square)
-            # TODO: Score cross-words
-        else:
-            # TODO: Horizontal
-            score = 0
-
-        return score
+    def is_play_valid(self,squares):
+        valid_plays = get_places_to_play(len(letters))
+        return sorted(squares) in valid_plays
