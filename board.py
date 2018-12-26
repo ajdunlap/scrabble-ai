@@ -1,4 +1,4 @@
-#from ansi.colour import fg,bg
+from ansi.colour import fg,bg
 import itertools
 import copy
 import player
@@ -60,6 +60,8 @@ letter_scores = {
     'Y': 4,
     'Z': 10,
 }
+for l in 'abcdefghjikjlmnopqrstuvwxyz':
+    letter_scores[l] = 0
 
 def get_oriented(is_vertical, arr, a, b):
     if is_vertical:
@@ -96,45 +98,45 @@ class BoardState:
     def show(self,highlight = []):
         for r,row in enumerate(self.played_letters):
             for c,letter in enumerate(row):
-                print(letter,end='')
-                #if (r,c) in highlight:
-                #    f = bg.yellow
-                #elif (r,c) in self.board.triple_word_scores:
-                #    f = bg.red
-                #elif (r,c) in self.board.double_word_scores:
-                #    f = bg.magenta
-                #elif (r,c) in self.board.triple_letter_scores:
-                #    f = bg.blue
-                #elif (r,c) in self.board.double_letter_scores:
-                #    f = bg.cyan
-                #else:
-                #    f = lambda x: x
-                #if letter == ' ':
-                #    print_letter = '\u3000'
-                #else:
-                #    print_letter = chr(0xff00 + ord(letter)-ord('A')+ord("!"))
-                #print(f(print_letter),end="")
+                if (r,c) in highlight:
+                    f = bg.yellow
+                elif (r,c) in self.board.triple_word_scores:
+                    f = bg.red
+                elif (r,c) in self.board.double_word_scores:
+                    f = bg.magenta
+                elif (r,c) in self.board.triple_letter_scores:
+                    f = bg.blue
+                elif (r,c) in self.board.double_letter_scores:
+                    f = bg.cyan
+                else:
+                    f = lambda x: x
+                if letter == ' ':
+                    print_letter = '\u3000'
+                else:
+                    print_letter = fg.bold(chr(0xff00 + ord(letter)-ord('A')+ord("!")))
+                print(f(print_letter + "\u20DE"),end="")
             print()
+        print()
 
     def next_open(self,f,r,c):
         while True:
-            r,c = f(r,c)
-            if r < 0 or c < 0 or r >= self.board.width or c >= self.board.height:
-                return False
-            elif self.played_letters[r][c] == ' ':
-                return (r,c)
+            v = f(r,c)
+            if not v or self.played_letters[v[0]][v[1]] == ' ':
+                return v
+            else:
+                r,c = v
 
     def go_up(self,r,c):
-        return (r-1,c)
+        return (r-1,c) if r > 0 else False
 
     def go_down(self,r,c):
-        return (r+1,c)
+        return (r+1,c) if r < self.board.height-1 else False
 
     def go_left(self,r,c):
-        return (r,c-1)
+        return (r,c-1) if c > 0 else False
 
     def go_right(self,r,c):
-        return (r,c+1)
+        return (r,c+1) if c < self.board.height-1 else False
 
     def next_open_up(self,r,c):
         return self.next_open(self.go_up,r,c)
@@ -220,9 +222,13 @@ class BoardState:
                     c = cc
                 else:
                     break
-        rv = []
+            else:
+                break
+        word = []
+        word_squares = []
         while True:
-            rv.append(self.played_letters[r][c])
+            word.append(self.played_letters[r][c])
+            word_squares.append((r,c))
             v = go_forward(r,c)
             if v:
                 rr,cc = v
@@ -231,22 +237,32 @@ class BoardState:
                     c = cc
                 else:
                     break
-        return ''.join(rv)
+            else:
+                break
+        return ''.join(word),word_squares
 
-    def make_proposal(self,squares):
+    #def make_proposal(self,squares):
+        #new_board = copy.deepcopy(self.played_letters)
+        #for j,(r,c) in enumerate(squares):
+            #new_board[r][c] = str(j)
+        #return new_board
+
+    def make_play(self,squares,letters):
         new_board = BoardState(self.board,copy.deepcopy(self.played_letters))
         for j,(r,c) in enumerate(squares):
-            new_board.played_letters[r][c] = str(j)
+            new_board.played_letters[r][c] = letters[j]
         return new_board
 
-    def get_words_produced(self,direction,squares):
-        proposed_board = self.make_proposal(squares)
+    def get_words_produced(self,direction,squares,letters=None):
+        if not letters:
+            letters = ''.join(chr(x + ord('0')) for x in range(len(squares)))
+        proposed_board = self.make_play(squares,letters)
         main_word = proposed_board.get_word_in_direction(direction,*squares[0])
         cross_words = []
         other_direction = "horizontal" if direction == "vertical" else "vertical"
         for sq in squares:
             word = proposed_board.get_word_in_direction(other_direction,*sq)
-            if len(word) > 1:
+            if len(word[0]) > 1:
                 cross_words.append(word)
         return main_word,cross_words
 
@@ -268,41 +284,42 @@ class BoardState:
         else:
             return self.get_places_to_play_not_first_turn(rack_size)
 
-
-
-
-    def score_word(self, squares, letters, is_vertical, const, first, last):
+    def score_word(self, squares, letters, word_squares):
+        new_board = self.make_play(squares,letters)
         word_multiplier = 1
         letters_score = 0
-        for i in range(first, last+1):
+        for sq in word_squares:
             letter_multiplier = 1
-            if oriented_tuple(is_vertical, i, const) in squares:
-                if oriented_tuple(is_vertical, i, const) \
-                        in self.board.double_letter_scores:
+            if sq in squares:
+                if sq in self.board.double_letter_scores:
                     letter_multiplier *= 2
-                if oriented_tuple(is_vertical, i, const) \
-                        in self.board.triple_letter_scores:
+                if sq in self.board.triple_letter_scores:
                     letter_multiplier *= 3
-                if oriented_tuple(is_vertical, i, const) \
-                        in self.board.double_word_scores:
+                if sq in self.board.double_word_scores:
                     word_multiplier *= 2
-                if oriented_tuple(is_vertical, i, const) \
-                        in self.board.triple_word_scores:
+                if sq in self.board.triple_word_scores:
                     word_multiplier *= 3
-                sq_idx = squares.index(oriented_tuple(is_vertical, i, const))
-                letter = letters[sq_idx]
-            else:
-                letter = get_oriented(is_vertical, self.played_letters, i, const)
+            letter = new_board.played_letters[sq[0]][sq[1]]
             letters_score += letter_multiplier * letter_scores[letter]
         return letters_score * word_multiplier
 
     def score(self, squares, letters):
+        direction = "horizontal" if len(set(x[0] for x in squares)) == 1 else "vertical"
+        main_word,cross_words = self.get_words_produced(direction,squares,letters)
+        word_squaress = [main_word[1]] + [cw[1] for cw in cross_words]
+        score = 0
+        for ws in word_squaress:
+            score += self.score_word(squares,letters,ws)
+        return score
+
+    # this is broken for now
+    def is_play_valid(self, squares, letters):
         if len(squares) == 0 or len(letters) != len(squares):
-            raise InvalidMoveException()
+            return False
         for pos in squares:
             # Check that all the squares are empty
             if self.played_letters[pos[0]][pos[1]] != ' ':
-                raise InvalidMoveException()
+                return False
         if len(squares) > 1:
             is_vertical = squares[0][1] == squares[1][1]
         else:
@@ -342,9 +359,10 @@ bs = BoardState(make_official_scrabble_board())
 bs.do_play([(7,7),(7,8),(7,9),(7,10)],"ECHO")
 l = bs.get_places_to_play(7)
 x = l[100]
-y = bs.get_words_produced(*x)
+main_word,cross_words = bs.get_words_produced(*x)
+main_word = main_word[0]
+cross_words = [''.join(cw[0]) for cw in cross_words]
 p = player.PlayerState("ASENGER")
 wl = wordlist.Wordlist('wordlist')
-word = next(p.generate_possibilities(wl, *y))
-best = max(p.generate_possibilities(wl, *y), key=lambda m: bs.score(x[1], m))
-
+word = next(p.generate_possibilities(wl, main_word,cross_words))
+best = max(p.generate_possibilities(wl, main_word,cross_words), key=lambda m: bs.score(x[1], m))
