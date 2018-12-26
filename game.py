@@ -85,9 +85,9 @@ class Game:
 
 #import pdb
 #pdb.set_trace()
-hard_wl = wordlist.Wordlist("MOBYDICK")
+hard_wl = wordlist.Wordlist("XKCD1000")
 simple_wl = wordlist.Wordlist("SHAKESPEARE")
-p1 = player.PlayerState("Melville",hard_wl,greedy.greedy_strategy)
+p1 = player.PlayerState("XKCD 1000",hard_wl,greedy.greedy_strategy)
 p2 = player.PlayerState("Shakespeare",simple_wl,greedy.greedy_strategy)
 g = Game(players=[p1,p2])
 g.run(True)
