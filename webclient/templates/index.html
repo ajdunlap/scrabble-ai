@@ -1,0 +1,67 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/">
+  <head>
+    <title>$title</title>
+    <style type="text/css">
+      .scrabble-tile-place td {
+        border: 1px solid black;
+        height: 2em;
+        width: 2em;
+        font-family: "Helvetica";
+        text-align: center;
+      }
+      .scrabble-tile-place td .tile {
+        padding-top: 0.3em;
+        font-weight: bold;
+        font-size: 1.2em;
+      }
+      #scrabble-board td.double-letter-score {
+        background: #00ccff;
+      }
+      #scrabble-board td.triple-letter-score {
+        background: blue;
+      }
+      #scrabble-board td.double-word-score {
+        background: pink;
+      }
+      #scrabble-board td.triple-word-score {
+        background: red;
+      }
+      #scrabble-board td.starting-square {
+        background: pink;
+      }
+      #scrabble-board td.selected {
+        background: yellow;
+      }
+      #scrabble-board td.current-play {
+        color: grey;
+      }
+    </style>
+  <script
+			  src="https://code.jquery.com/jquery-3.3.1.min.js"
+			  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+			  crossorigin="anonymous"></script>
+  <script type="text/javascript" src="media/scrabble.js"></script>
+  </head>
+  <body class="index">
+    <div id="header">
+      <h1>$title</h1>
+    </div>
+
+    <table id="scrabble-board" class="scrabble-tile-place">
+      <tr py:for="r,row in enumerate(bs.played_letters)">
+        <td py:for="c,l in enumerate(row)" class="${'double-letter-score' if (r,c) in bs.board.double_letter_scores else 'triple-letter-score' if (r,c) in bs.board.triple_letter_scores else 'double-word-score' if (r,c) in bs.board.double_word_scores else 'triple-word-score' if (r,c) in bs.board.triple_word_scores else ''} ${'starting-square' if (r,c) == bs.board.starting_square else ''}" id="row-${r}-col-${c}" onclick="update_selection(${r},${c});"><div class="tile">${l}</div></td>
+      </tr>
+    </table>
+
+    <button onclick="do_play()">Submit</button>
+
+    <h3>Your rack</h3>
+    <table id="scrabble-rack" class="scrabble-tile-place">
+      <tr>
+        <td py:for="l in rack" class="rack-letter-${l}"><div class="tile">${l}</div></td>
+      </tr>
+    </table>
+
+  </body>
+</html>
