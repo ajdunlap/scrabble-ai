@@ -90,5 +90,4 @@ simple_wl = wordlist.Wordlist("SHAKESPEARE")
 p1 = player.PlayerState("Melville",hard_wl,greedy.greedy_strategy)
 p2 = player.PlayerState("Shakespeare",simple_wl,greedy.greedy_strategy)
 g = Game(players=[p1,p2])
-import cProfile
-cProfile.run("g.run(True)")
+g.run(True)
