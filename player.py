@@ -32,4 +32,4 @@ class PlayerState:
                             if resolved not in wordlist.words:
                                 break
                         else:
-                            yield proposal
+                            yield ''.join(x for j,x in enumerate(proposal) if not main_pattern[j].isalpha())
